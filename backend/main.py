@@ -1,10 +1,19 @@
 import pandas as pd
 import io
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.preprocessing import LabelEncoder
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
@@ -30,32 +39,34 @@ async def analyze_data(file: UploadFile = File(...)):
     try:
         df = pd.read_csv(io.BytesIO(contents))
         
-        # Sütun kontrolü: Bizim modelimiz 'saat', 'icerik_turu' ve 'etkilesim' sütunları bekliyor.
         beklenen_sutunlar = ['saat', 'icerik_turu', 'etkilesim']
         if not all(col in df.columns for col in beklenen_sutunlar):
             return {"error": f"CSV dosyasında şu sütunlar olmalı: {beklenen_sutunlar}"}
 
-        # 1. Veri Ön İşleme (Preprocessing)
+        # Veri Ön İşleme
         le = LabelEncoder()
-        df['icerik_turu_kod'] = le.fit_transform(df['icerik_turu']) # Metinleri (Video, Fotoğraf) sayılara çeviriyoruz
+        df['icerik_turu_kod'] = le.fit_transform(df['icerik_turu'])
         
         X = df[['saat', 'icerik_turu_kod']]
         y = df['etkilesim']
 
-        # 2. Model Eğitimi
+        # Model Eğitimi
         model = DecisionTreeRegressor(random_state=42)
         model.fit(X, y)
 
-        # 3. İçgörü (Insight) Çıkarma
-        # Hangi saatlerin en çok etkileşim getirdiğini bulalım
+        # 1. Altın Saatler Hesaplaması
         saat_etkilesim = df.groupby('saat')['etkilesim'].mean().sort_values(ascending=False).head(3)
         altin_saatler = saat_etkilesim.index.tolist()
+
+        # 2. İçerik Türü Başarısı Hesaplaması
+        icerik_etkilesim = df.groupby('icerik_turu')['etkilesim'].mean().round(0).to_dict()
 
         return {
             "message": "Yapay Zeka Analizi Tamamlandı! 🧠",
             "altin_saatler": altin_saatler,
             "model_skoru": round(model.score(X, y), 2),
-            "en_iyi_saat_etkilesim_ortalamasi": round(saat_etkilesim.iloc[0], 2)
+            "en_iyi_saat_etkilesim_ortalamasi": round(saat_etkilesim.iloc[0], 2),
+            "icerik_basarisi": icerik_etkilesim 
         }
 
     except Exception as e:
