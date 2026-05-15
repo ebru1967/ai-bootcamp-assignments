@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'; // useRef eklendi
 import AnalyticsChart from './components/features/AnalyticsChart'; 
 import jsPDF from 'jspdf'; // PDF kütüphanesi
-import html2canvas from 'html2canvas'; // Ekran görüntüsü kütüphanesi
+import { toPng } from 'html-to-image'; // Ekran görüntüsü kütüphanesi
 
 function App() {
   const [file, setFile] = useState(null);
@@ -48,26 +48,37 @@ function App() {
     }
   };
 
-  // ✨ PDF OLUŞTURMA FONKSİYONU
-  const downloadPDF = () => {
-    const input = reportRef.current;
-    
-    // html2canvas ile div'in fotoğrafını çekiyoruz
-    html2canvas(input, { 
-      scale: 2, // Kaliteyi artırmak için
-      useCORS: true, // Eğer dışarıdan resim gelirse hata vermemesi için
-      backgroundColor: "#ffffff" // Arka planın beyaz olduğundan emin oluyoruz
-    }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save("AI-Social-Insights-Analiz-Raporu.pdf");
+const downloadPDF = async () => {
+  console.log("PDF hazırlama işlemi başladı...");
+  const element = reportRef.current;
+
+  if (!element) {
+    alert("Hata: Rapor alanı bulunamadı.");
+    return;
+  }
+
+  try {
+    // html-to-image ile oklch hatalarından kurtularak fotoğraf çekiyoruz
+    const dataUrl = await toPng(element, { 
+      quality: 0.95,
+      cacheBust: true,
+      backgroundColor: '#ffffff', // Arka planın beyaz olmasını garanti ediyoruz
     });
-  };
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(dataUrl);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save("AI-Social-Insights-Raporu.pdf");
+    
+    console.log("PDF başarıyla indirildi!");
+  } catch (error) {
+    console.error("PDF oluşturulurken bir hata oluştu:", error);
+    alert("PDF oluşturulamadı. Lütfen tekrar deneyin.");
+  }
+};
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-16 px-4 font-sans text-slate-800">

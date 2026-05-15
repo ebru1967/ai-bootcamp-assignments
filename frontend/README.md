@@ -1,16 +1,35 @@
-# React + Vite
+# 🤖 AI-Social Insights: Akıllı Sosyal Medya Analiz Platformu
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bu proje, sosyal medya yöneticilerinin içerik verilerini yapay zeka ile analiz ederek "Altın Saatler" ve "İçerik Stratejileri" oluşturmasını sağlayan bir Full-Stack uygulamadır.
 
-Currently, two official plugins are available:
+## 🚀 Canlı Linkler
+- **Frontend:** [https://ai-bootcamp-assignments.vercel.app/]
+- **Backend API:** [https://ai-social-insights-api.onrender.com]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Öne Çıkan Özellikler
+- **AI-Powered Analysis:** Google Gemini Pro API kullanarak içerik verilerinden anlamlı tavsiyeler üretir.
+- **Dinamik Görselleştirme:** Etkileşim oranlarını şık grafiklerle sunar.
+- **PDF Raporlama:** Analiz sonuçlarını profesyonel bir PDF belgesi olarak dışa aktarır.
+- **Zarif Hata Yönetimi:** API limitleri dolduğunda yerel makine öğrenmesi algoritmalarıyla kesintisiz hizmet verir.
 
-## React Compiler
+## 🛠️ Teknoloji Yığını (Tech Stack)
+- **Frontend:** React.js, Vite, Tailwind CSS, Recharts, jsPDF
+- **Backend:** Python, FastAPI, Pandas, Scikit-learn
+- **AI:** Google Gemini Generative AI API
+- **Deployment:** Vercel (Frontend), Render (Backend)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📦 Kurulum (Lokal Çalıştırma)
 
-## Expanding the ESLint configuration
+### Backend
+1. `cd backend`
+2. `pip install -r requirements.txt`
+3. `.env` dosyasına `GEMINI_API_KEY` ekleyin.
+4. `uvicorn main:app --reload`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Frontend
+1. `cd frontend`
+2. `npm install`
+3. `npm run dev`
+
+---
+*Bu proje YZ ile Ürün Geliştirme Bootcamp'ı kapsamında geliştirilmiştir.*
