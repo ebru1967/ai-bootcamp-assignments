@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react'; // useRef eklendi
 import AnalyticsChart from './components/features/AnalyticsChart'; 
+import jsPDF from 'jspdf'; // PDF kütüphanesi
+import html2canvas from 'html2canvas'; // Ekran görüntüsü kütüphanesi
 
 function App() {
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Raporun fotoğrafını çekmek için bu referansı kullanacağız
+  const reportRef = useRef();
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
-  // İŞTE SİHRİN GERÇEKLEŞTİĞİ YER: GERÇEK API BAĞLANTISI
   const handleAnalyze = async () => {
     if (!file) {
       alert("Lütfen önce bir CSV dosyası seçin!");
@@ -20,32 +24,49 @@ function App() {
     setLoading(true);
 
     try {
-      // 1. Dosyayı API'nin anlayacağı formata (FormData) çeviriyoruz
       const formData = new FormData();
       formData.append("file", file);
 
-      // 2. Python (FastAPI) sunucumuza post isteği atıyoruz
+      // Canlıdaki Render API adresin
       const response = await fetch("https://ai-social-insights-api.onrender.com/analyze", {
         method: "POST",
         body: formData,
       });
 
-      // 3. Eğer sunucudan hata dönerse yakalıyoruz
       if (!response.ok) {
         throw new Error(`Sunucu Hatası: ${response.status}`);
       }
 
-      // 4. Gelen gerçek JSON verisini çözüp State'e kaydediyoruz
       const data = await response.json();
       setResult(data);
 
     } catch (error) {
       console.error("Bağlantı Hatası:", error);
-      alert("Analiz başarısız! Lütfen arka plan (Backend) sunucusunun çalıştığından emin olun.");
+      alert("Analiz başarısız! Lütfen arka plan sunucusunun (Render) ayakta olduğundan emin olun.");
     } finally {
-      // İşlem bitince yüklenme animasyonunu durdur
       setLoading(false);
     }
+  };
+
+  // ✨ PDF OLUŞTURMA FONKSİYONU
+  const downloadPDF = () => {
+    const input = reportRef.current;
+    
+    // html2canvas ile div'in fotoğrafını çekiyoruz
+    html2canvas(input, { 
+      scale: 2, // Kaliteyi artırmak için
+      useCORS: true, // Eğer dışarıdan resim gelirse hata vermemesi için
+      backgroundColor: "#ffffff" // Arka planın beyaz olduğundan emin oluyoruz
+    }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save("AI-Social-Insights-Analiz-Raporu.pdf");
+    });
   };
 
   return (
@@ -87,59 +108,71 @@ function App() {
         </div>
       </div>
 
-      {/* SONUÇ KARTI */}
+      {/* SONUÇ KARTI VE PDF BUTONU */}
       {result && (
-        <div className="bg-white shadow-2xl shadow-indigo-100/40 rounded-3xl p-8 w-full max-w-2xl border border-indigo-50 animate-fade-in-up">
+        <div className="w-full max-w-2xl flex flex-col gap-4 animate-fade-in-up">
           
-          <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-            📊 Analiz Sonuçları
-          </h2>
-          
-          {/* AI TAVSİYESİ KUTUSU */}
-          <div className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-r-xl mb-8 shadow-sm">
-            <h3 className="text-amber-700 font-bold text-lg mb-2 flex items-center gap-2">
-              💡 Algoritma İçgörüsü
-            </h3>
-            <p className="text-amber-900 leading-relaxed font-medium">
-              {result.ai_tavsiyesi}
-            </p>
-          </div>
+          {/* PDF İNDİR BUTONU */}
+          <button 
+            onClick={downloadPDF}
+            className="self-end flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 hover:shadow-emerald-200"
+          >
+            📥 Analiz Raporunu PDF İndir
+          </button>
 
-          {/* İSTATİSTİKLER */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-              <p className="text-sm text-slate-500 font-semibold mb-1">🎯 Modelin Güven Skoru</p>
-              <p className="text-3xl font-black text-indigo-600">%{(result.model_skoru * 100).toFixed(0)}</p>
+          {/* PDF'E DÖNÜŞECEK ALAN (reportRef buraya bağlandı) */}
+          <div ref={reportRef} className="bg-white shadow-2xl shadow-indigo-100/40 rounded-3xl p-8 border border-indigo-50 bg-white">
+            
+            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+              📊 Analiz Sonuçları
+            </h2>
+            
+            {/* AI TAVSİYESİ KUTUSU */}
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-r-xl mb-8 shadow-sm">
+              <h3 className="text-amber-700 font-bold text-lg mb-2 flex items-center gap-2">
+                💡 Algoritma İçgörüsü
+              </h3>
+              <p className="text-amber-900 leading-relaxed font-medium">
+                {result.ai_tavsiyesi}
+              </p>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-              <p className="text-sm text-slate-500 font-semibold mb-1">🔥 En Yüksek Etkileşim</p>
-              <p className="text-3xl font-black text-rose-500">{result.en_iyi_saat_etkilesim_ortalamasi.toLocaleString('tr-TR')}</p>
-            </div>
-          </div>
-          
-          {/* ALTIN SAATLER */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-slate-700 mb-4">⭐ Altın Saatler</h3>
-            <div className="flex flex-wrap gap-3">
-              {result.altin_saatler.map((saat, index) => (
-                <span 
-                  key={index} 
-                  className="bg-indigo-100 text-indigo-700 px-5 py-2.5 rounded-full font-bold text-lg shadow-sm"
-                >
-                  {saat}:00
-                </span>
-              ))}
-            </div>
-          </div>
-          
-          {/* GRAFİK ALANI */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <h3 className="text-lg font-bold text-slate-700 mb-6">📈 İçerik Tipi Başarı Oranları</h3>
-            <div className="h-64 w-full bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden">
-                <AnalyticsChart data={result.icerik_basarisi}/>
-            </div>
-          </div>
 
+            {/* İSTATİSTİKLER */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="text-sm text-slate-500 font-semibold mb-1">🎯 Modelin Güven Skoru</p>
+                <p className="text-3xl font-black text-indigo-600">%{Math.round(result.model_skoru * 100)}</p>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="text-sm text-slate-500 font-semibold mb-1">🔥 En Yüksek Etkileşim</p>
+                <p className="text-3xl font-black text-rose-500">{result.en_iyi_saat_etkilesim_ortalamasi.toLocaleString('tr-TR')}</p>
+              </div>
+            </div>
+            
+            {/* ALTIN SAATLER */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-slate-700 mb-4">⭐ Altın Saatler</h3>
+              <div className="flex flex-wrap gap-3">
+                {result.altin_saatler.map((saat, index) => (
+                  <span 
+                    key={index} 
+                    className="bg-indigo-100 text-indigo-700 px-5 py-2.5 rounded-full font-bold text-lg shadow-sm"
+                  >
+                    {saat}:00
+                  </span>
+                ))}
+              </div>
+            </div>
+            
+            {/* GRAFİK ALANI */}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <h3 className="text-lg font-bold text-slate-700 mb-6">📈 İçerik Tipi Başarı Oranları</h3>
+              <div className="h-64 w-full bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden">
+                  <AnalyticsChart data={result.icerik_basarisi}/>
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
     </div>
