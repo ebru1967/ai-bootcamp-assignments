@@ -25,7 +25,7 @@ function App() {
       formData.append("file", file);
 
       // 2. Python (FastAPI) sunucumuza post isteği atıyoruz
-      const response = await fetch("http://127.0.0.1:8000/analyze", {
+      const response = await fetch("https://ai-social-insights-api.onrender.com/analyze", {
         method: "POST",
         body: formData,
       });
