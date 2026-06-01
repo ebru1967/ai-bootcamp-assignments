@@ -2,7 +2,7 @@ import pandas as pd
 import io
 import os
 from dotenv import load_dotenv
-from google import genai # YENİ VE GÜNCEL PAKET
+from google import genai 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sklearn.tree import DecisionTreeRegressor
