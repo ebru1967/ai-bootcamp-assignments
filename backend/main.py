@@ -82,7 +82,6 @@ async def analyze_data(file: UploadFile = File(...)):
         icerik_etkilesim = {k: int(v) for k, v in icerik_etkilesim.items()}
         en_iyi_tur = max(icerik_etkilesim, key=icerik_etkilesim.get)
 
-        # --- YENİ: GEMINI API (LLM) KISMI ---
         # --- YENİ: GEMINI API (LLM) KISMI VE HATA KONTROLÜ ---
         prompt = f"""
         Sen uzman bir sosyal medya stratejistisin.
@@ -97,7 +96,6 @@ async def analyze_data(file: UploadFile = File(...)):
         """
         
         try:
-            # Önce Gemini'a bağlanmayı dener (Öncelikli plan)
             response = gemini_client.models.generate_content(
                 model='gemini-1.5-flash', 
                 contents=prompt
@@ -106,8 +104,6 @@ async def analyze_data(file: UploadFile = File(...)):
             mesaj_durumu = "Yapay Zeka Analizi Başarılı! 🧠✨"
             
         except Exception as api_error:
-            # Eğer Google API hata verirse (Kota, 429, 404 vb.), uygulama çökmez!
-            # Kendi yedek metnini dinamik olarak oluşturur.
             print(f"Gemini API Hatası Yakalandı: {api_error}")
             ai_tavsiyesi_metni = f"Makine öğrenmesi modelimize göre en çok etkileşimi '{en_iyi_tur}' içerikleri alıyor. Algoritmayı yakalamak ve kitleyi büyütmek için bir sonraki gönderini saat {altin_saatler[0]}:00 sularında paylaşmalısın!"
             mesaj_durumu = "ML Analizi Başarılı (LLM Çevrimdışı) 📊"
